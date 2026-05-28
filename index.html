@@ -2,19 +2,18 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Compteur de Rami Sec Universel</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
-    body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    body { font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
   </style>
 </head>
 <body class="min-h-screen bg-slate-950 text-slate-100 py-6 px-4 sm:px-6 lg:px-8 flex flex-col justify-between">
 
   <div class="max-w-4xl w-full mx-auto space-y-8">
     
-    <!-- ================= ÉCRAN 1 : CONFIGURATION DES JOUEURS ================= -->
     <main id="setup-screen" class="max-w-md mx-auto bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-6">
       <div class="text-center space-y-2">
         <span class="text-3xl">🎴</span>
@@ -24,49 +23,40 @@
         <p class="text-xs text-slate-400">Configurez les joueurs pour démarrer la course aux 1000 points.</p>
       </div>
 
-      <!-- Formulaire d'ajout -->
-      <div class="space-y-3">
+      <form id="player-form" onsubmit="handleFormSubmit(event)" class="space-y-3">
         <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400">Nom du joueur</label>
         <div class="flex gap-2">
-          <input type="text" id="player-input" placeholder="Ex: Souhail, Paulo..." class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-slate-200 focus:border-amber-500 focus:outline-none">
-          <button type="button" onclick="addPlayer()" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-4 py-2.5 rounded-xl text-sm transition">
+          <input type="text" id="player-input" autocomplete="off" placeholder="Ex: Souhail, Paulo..." class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-slate-200 focus:border-amber-500 focus:outline-none">
+          <button type="submit" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-4 py-2.5 rounded-xl text-sm transition active:scale-95">
             Ajouter
           </button>
         </div>
-      </div>
+      </form>
 
-      <!-- Liste des joueurs ajoutés -->
       <div class="space-y-2">
         <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-400">Joueurs sur la ligne de départ :</h3>
         <ul id="setup-players-list" class="divide-y divide-slate-800 border border-slate-800 rounded-xl bg-slate-950/50 overflow-hidden">
-          <!-- Génré par JS -->
-        </ul>
+          </ul>
       </div>
 
-      <!-- BOUTON UNIQUE DE VALIDATION -->
-      <button type="button" id="start-game-btn" onclick="validateAndStart()" class="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-bold text-sm shadow-lg shadow-emerald-950/50 transition active:scale-[0.98] opacity-40 pointer-events-none">
+      <button type="button" id="start-game-btn" onclick="validateAndStart()" class="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-bold text-sm shadow-lg shadow-emerald-950/50 transition active:scale-[0.98] opacity-30" disabled>
         🚀 Lancer la partie
       </button>
     </main>
 
-    <!-- ================= ÉCRAN 2 : TABLE DE JEU (CACHÉ AU DÉPART) ================= -->
     <main id="game-screen" class="space-y-8 hidden">
-      <!-- Header de jeu -->
       <header class="text-center space-y-2">
         <h1 class="text-3xl font-extrabold tracking-tight text-white">Score en Direct</h1>
         <p class="text-sm text-slate-400">Le premier à atteindre <span class="text-red-400 font-bold">1000 pts</span> a perdu.</p>
       </header>
 
-      <!-- Cartes des Scores -->
       <section id="player-cards" class="grid grid-cols-2 sm:grid-cols-4 gap-4"></section>
 
-      <!-- Zone de validation des manches -->
       <section class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
         <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400">⚡ Qui a fait Rami Sec ?</h2>
         <div id="action-buttons" class="grid grid-cols-2 sm:grid-cols-4 gap-3"></div>
       </section>
 
-      <!-- Tableau d'historique -->
       <section class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
         <div class="px-6 py-4 border-b border-slate-800 flex justify-between items-center bg-slate-900/50">
           <h3 class="font-bold text-slate-200 text-sm">Historique des Manches</h3>
@@ -78,17 +68,14 @@
           <table class="w-full text-left border-collapse">
             <thead>
               <tr id="table-header" class="bg-slate-950/50 text-xs font-semibold uppercase tracking-wider text-slate-400 border-b border-slate-800">
-                <!-- Généré dynamiquement -->
-              </tr>
+                </tr>
             </thead>
             <tbody id="table-body" class="divide-y divide-slate-800/50 text-sm">
-              <!-- Généré dynamiquement -->
-            </tbody>
+              </tbody>
           </table>
         </div>
       </section>
 
-      <!-- Quitter la partie -->
       <div class="text-center">
         <button type="button" onclick="resetToSetup()" class="text-xs text-red-400 hover:text-red-300 font-semibold bg-red-500/10 border border-red-500/20 px-4 py-2 rounded-xl transition">
           🗑️ Abandonner et créer une nouvelle table
@@ -102,7 +89,8 @@
     let players = [];
     let rounds = [];
 
-    function addPlayer() {
+    function handleFormSubmit(e) {
+      e.preventDefault();
       const input = document.getElementById('player-input');
       const name = input.value.trim();
       if (name && !players.includes(name)) {
@@ -123,7 +111,8 @@
       
       if (players.length === 0) {
         list.innerHTML = `<li class="p-4 text-center text-xs text-slate-500 italic">Aucun joueur ajouté</li>`;
-        startBtn.classList.add('opacity-40', 'pointer-events-none');
+        startBtn.disabled = true;
+        startBtn.classList.add('opacity-30');
       } else {
         list.innerHTML = players.map((p, idx) => `
           <li class="flex justify-between items-center p-3 text-sm font-medium pl-4">
@@ -133,9 +122,11 @@
         `).join('');
         
         if (players.length >= 2) {
-          startBtn.classList.remove('opacity-40', 'pointer-events-none');
+          startBtn.disabled = false;
+          startBtn.classList.remove('opacity-30');
         } else {
-          startBtn.classList.add('opacity-40', 'pointer-events-none');
+          startBtn.disabled = true;
+          startBtn.classList.add('opacity-30');
         }
       }
     }
@@ -267,13 +258,6 @@
       } catch(e) {}
       renderSetup();
     }
-
-    document.getElementById('player-input').addEventListener('keypress', function(e) {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        addPlayer();
-      }
-    });
 
     loadFromStorage();
   </script>
