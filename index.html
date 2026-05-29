@@ -6,7 +6,7 @@
   <title>Rami Sec Pro - Compteur Évolutif</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght=400;600;700;800&display=swap');
     body { font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
     .custom-scroll::-webkit-scrollbar { width: 4px; height: 4px; }
     .custom-scroll::-webkit-scrollbar-track { background: #0f172a; }
@@ -35,6 +35,11 @@
           </button>
         </div>
       </form>
+
+      <div id="frequent-players-zone" class="space-y-2 hidden">
+        <h4 class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Joueurs fréquents (cliquer pour ajouter) :</h4>
+        <div id="frequent-players-list" class="flex flex-wrap gap-2"></div>
+      </div>
 
       <div class="space-y-2">
         <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-400">Joueurs sur la ligne de départ :</h3>
@@ -77,7 +82,7 @@
             <thead>
               <tr id="table-header" class="bg-slate-950/50 text-xs font-semibold uppercase tracking-wider text-slate-400 border-b border-slate-800"></tr>
             </thead>
-            <tbody id="table-body" class="divide-y divide-slate-800/50 text-sm"></ul>
+            <tbody id="table-body" class="divide-y divide-slate-800/50 text-sm"></tbody>
           </table>
         </div>
       </section>
@@ -113,21 +118,17 @@
   </div>
 
   <script>
-    /**
-     * Espace de nommage global (Namespace complet de l'application)
-     */
     const App = {
-      // Configuration des constantes globales modifiables facilement
       config: {
         pointsPerLoss: 100,
         eliminationThreshold: 1000,
         storageKeys: {
           live: 'rami_live_session',
-          global: 'rami_global_archives'
+          global: 'rami_global_archives',
+          players: 'rami_global_players' // Nouveau registre
         }
       },
 
-      // Données dynamiques de session (State)
       state: {
         players: [],
         rounds: []
@@ -156,13 +157,30 @@
         },
         archiveGame(archivedGame) {
           const archives = this.getArchives();
-          archives.unshift(archivedGame); // Ajoute au début de la liste
+          archives.unshift(archivedGame);
           localStorage.setItem(App.config.storageKeys.global, JSON.stringify(archives));
+          
+          // Au moment d'archiver, on s'assure d'enregistrer tous les participants dans l'annuaire permanent
+          archivedGame.players.forEach(p => this.registerKnownPlayer(p));
         },
         clearArchives() {
-          if (confirm("Voulez-vous supprimer tout l'historique des parties passées ? Cette action est irréversible.")) {
+          if (confirm("Voulez-vous supprimer tout l'historique des parties passées ?")) {
             localStorage.removeItem(App.config.storageKeys.global);
             App.ui.renderArchives();
+          }
+        },
+        
+        // NOUVELLES FONCTIONS DE GESTION DE L'ANNUAIRE DES JOUEURS
+        getKnownPlayers() {
+          const data = localStorage.getItem(App.config.storageKeys.players);
+          return data ? JSON.parse(data) : [];
+        },
+        registerKnownPlayer(name) {
+          let known = this.getKnownPlayers();
+          const cleanName = name.trim();
+          if (cleanName && !known.includes(cleanName)) {
+            known.push(cleanName);
+            localStorage.setItem(App.config.storageKeys.players, JSON.stringify(known));
           }
         }
       },
@@ -172,8 +190,11 @@
        */
       engine: {
         addPlayer(name) {
-          if (name && !App.state.players.includes(name)) {
-            App.state.players.push(name);
+          const cleanName = name.trim();
+          if (cleanName && !App.state.players.includes(cleanName)) {
+            App.state.players.push(cleanName);
+            // On l'enregistre immédiatement dans l'annuaire pour qu'il soit reconnu à l'avenir
+            App.storage.registerKnownPlayer(cleanName);
             App.ui.renderSetupScreen();
           }
         },
@@ -193,8 +214,6 @@
           App.state.rounds.push({ id: nextRoundId, winner: winnerName });
           App.storage.saveLiveSession();
           App.ui.renderGameInterface();
-          
-          // Vérification de la fin de partie (Est-ce que quelqu'un a perdu ?)
           this.checkGameStatus();
         },
         undoRound() {
@@ -222,13 +241,10 @@
           const losers = App.state.players.filter(p => totals[p] >= App.config.eliminationThreshold);
           
           if (losers.length > 0) {
-            setTimeout(() => {
-              this.endGame(totals, losers);
-            }, 300);
+            setTimeout(() => { this.endGame(totals, losers); }, 300);
           }
         },
         endGame(finalTotals, losers) {
-          // Déterminer le vrai gagnant (celui qui a le moins de points)
           let winnerName = App.state.players[0];
           let minScore = finalTotals[winnerName];
           
@@ -239,7 +255,6 @@
             }
           });
 
-          // Création de la structure d'archive scannable
           const gameReport = {
             id: Date.now(),
             date: new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
@@ -250,13 +265,11 @@
             totalRounds: App.state.rounds.length
           };
 
-          // Sauvegarde dans les archives à long terme
           App.storage.archiveGame(gameReport);
           App.storage.clearLiveSession();
 
           alert(`🏆 Partie Terminée !\nVainqueur : ${winnerName} (${minScore} pts)\nÉliminé(s) : ${losers.join(', ')}`);
           
-          // Redirection vers l'historique global
           App.state.players = [];
           App.state.rounds = [];
           App.ui.renderSetupScreen();
@@ -264,7 +277,7 @@
           App.ui.switchScreen('history-screen');
         },
         abortGame() {
-          if (confirm("Êtes-vous sûr de vouloir détruire cette partie ? Elle ne sera pas enregistrée dans l'historique.")) {
+          if (confirm("Êtes-vous sûr de vouloir détruire cette partie ?")) {
             App.state.players = [];
             App.state.rounds = [];
             App.storage.clearLiveSession();
@@ -283,6 +296,9 @@
             document.getElementById(id).classList.add('hidden');
           });
           document.getElementById(screenId).classList.remove('hidden');
+          if(screenId === 'setup-screen') {
+            this.renderFrequentPlayers();
+          }
         },
         handlePlayerSubmit(e) {
           e.preventDefault();
@@ -293,6 +309,29 @@
             input.value = '';
           }
         },
+        
+        // RENDU DE LA ZONE DES JOUEURS RECONNUS
+        renderFrequentPlayers() {
+          const knownPlayers = App.storage.getKnownPlayers();
+          const zone = document.getElementById('frequent-players-zone');
+          const listContainer = document.getElementById('frequent-players-list');
+          
+          // On filtre pour ne pas proposer un joueur qui est déjà ajouté à la table en cours
+          const availableSuggestions = knownPlayers.filter(p => !App.state.players.includes(p));
+
+          if (availableSuggestions.length === 0) {
+            zone.classList.add('hidden');
+            return;
+          }
+
+          zone.classList.remove('hidden');
+          listContainer.innerHTML = availableSuggestions.map(p => `
+            <button type="button" onclick="App.engine.addPlayer('${p}')" class="text-xs bg-slate-800 hover:bg-slate-750 text-slate-300 px-3 py-1.5 rounded-xl border border-slate-700/30 transition active:scale-95">
+              + ${p}
+            </button>
+          `).join('');
+        },
+
         renderSetupScreen() {
           const list = document.getElementById('setup-players-list');
           const startBtn = document.getElementById('start-game-btn');
@@ -314,15 +353,16 @@
             if (isReady) startBtn.classList.remove('opacity-30');
             else startBtn.classList.add('opacity-30');
           }
+          
+          // On rafraîchit les suggestions à chaque modification de la liste actuelle
+          this.renderFrequentPlayers();
         },
         initGameInterface() {
-          // En-tête dynamique du tableau
           const header = document.getElementById('table-header');
           header.innerHTML = `<th class="py-4 px-4 text-center w-16">M.</th>` + 
             App.state.players.map(p => `<th class="py-4 px-4 text-center">${p}</th>`).join('') +
             `<th class="py-4 px-4 text-center">Gagnant</th>`;
 
-          // Boutons tactiles rapides
           const actionZone = document.getElementById('action-buttons');
           actionZone.innerHTML = App.state.players.map(p => `
             <button type="button" onclick="App.engine.addRound('${p}')" class="flex flex-col items-center justify-center py-3 bg-slate-800 hover:bg-slate-750 border border-slate-700/60 rounded-xl transition active:scale-95">
@@ -335,9 +375,8 @@
         },
         renderGameInterface() {
           const totals = App.engine.calculateTotals();
-          
-          // Rendu des cartes de scores
           const cardsZone = document.getElementById('player-cards');
+          
           cardsZone.innerHTML = App.state.players.map(p => {
             const score = totals[p];
             let colorClass = "text-slate-100";
@@ -358,7 +397,6 @@
             `;
           }).join('');
 
-          // Rendu des lignes du tableau de jeu
           const body = document.getElementById('table-body');
           if (App.state.rounds.length === 0) {
             body.innerHTML = `<tr><td colspan="${App.state.players.length + 2}" class="text-center py-8 text-slate-500 italic text-xs">Aucune manche jouée. Cliquez sur un joueur pour commencer !</td></tr>`;
@@ -419,11 +457,7 @@
         }
       },
 
-      /**
-       * Point d'entrée de l'application au démarrage
-       */
       init() {
-        // Chargement du système de restauration automatique
         const savedSession = App.storage.getLiveSession();
         if (savedSession && savedSession.players && savedSession.players.length >= 2) {
           App.state.players = savedSession.players;
@@ -433,13 +467,10 @@
         } else {
           App.ui.renderSetupScreen();
         }
-        
-        // Pré-calcul de l'historique global
         App.ui.renderArchives();
       }
     };
 
-    // Lancement officiel de la structure au chargement de la fenêtre
     window.addEventListener('DOMContentLoaded', () => App.init());
   </script>
 </body>
