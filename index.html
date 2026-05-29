@@ -3,30 +3,33 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Compteur de Rami Sec Universel</title>
+  <title>Rami Sec Pro - Compteur Évolutif</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
     body { font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
+    .custom-scroll::-webkit-scrollbar { width: 4px; height: 4px; }
+    .custom-scroll::-webkit-scrollbar-track { background: #0f172a; }
+    .custom-scroll::-webkit-scrollbar-thumb { background: #334155; border-radius: 999px; }
   </style>
 </head>
 <body class="min-h-screen bg-slate-950 text-slate-100 py-6 px-4 sm:px-6 lg:px-8 flex flex-col justify-between">
 
-  <div class="max-w-4xl w-full mx-auto space-y-8">
+  <div class="max-w-4xl w-full mx-auto space-y-8 flex-1 flex flex-col justify-center">
     
-    <main id="setup-screen" class="max-w-md mx-auto bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-6">
+    <main id="setup-screen" class="max-w-md w-full mx-auto bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-6">
       <div class="text-center space-y-2">
-        <span class="text-3xl">🎴</span>
+        <div class="flex justify-center gap-2 text-3xl"><span>🎴</span><span>📊</span></div>
         <h1 class="text-2xl font-extrabold tracking-tight bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">
-          Nouvelle Partie de Rami
+          Rami Sec Universel
         </h1>
-        <p class="text-xs text-slate-400">Configurez les joueurs pour démarrer la course aux 1000 points.</p>
+        <p class="text-xs text-slate-400">Configurez votre table ou consultez vos statistiques locales.</p>
       </div>
 
-      <form id="player-form" onsubmit="handleFormSubmit(event)" class="space-y-3">
+      <form id="player-form" onsubmit="App.ui.handlePlayerSubmit(event)" class="space-y-3">
         <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400">Nom du joueur</label>
         <div class="flex gap-2">
-          <input type="text" id="player-input" autocomplete="off" placeholder="Ex: Souhail, Paulo..." class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-slate-200 focus:border-amber-500 focus:outline-none">
+          <input type="text" id="player-input" autocomplete="off" placeholder="Ex: Souhail, Paulo, Zied..." class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-slate-200 focus:border-amber-500 focus:outline-none">
           <button type="submit" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-4 py-2.5 rounded-xl text-sm transition active:scale-95">
             Ajouter
           </button>
@@ -35,231 +38,409 @@
 
       <div class="space-y-2">
         <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-400">Joueurs sur la ligne de départ :</h3>
-        <ul id="setup-players-list" class="divide-y divide-slate-800 border border-slate-800 rounded-xl bg-slate-950/50 overflow-hidden">
-          </ul>
+        <ul id="setup-players-list" class="divide-y divide-slate-800 border border-slate-800 rounded-xl bg-slate-950/50 overflow-hidden"></ul>
       </div>
 
-      <button type="button" id="start-game-btn" onclick="validateAndStart()" class="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-bold text-sm shadow-lg shadow-emerald-950/50 transition active:scale-[0.98] opacity-30" disabled>
-        🚀 Lancer la partie
-      </button>
+      <div class="space-y-3 pt-2">
+        <button type="button" id="start-game-btn" onclick="App.engine.startGame()" class="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-bold text-sm shadow-lg shadow-emerald-950/50 transition active:scale-[0.98] opacity-30" disabled>
+          🚀 Lancer la partie
+        </button>
+        
+        <button type="button" onclick="App.ui.switchScreen('history-screen')" class="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-750 text-slate-300 font-semibold text-xs transition border border-slate-700/40">
+          📜 Voir l'historique des parties
+        </button>
+      </div>
     </main>
 
-    <main id="game-screen" class="space-y-8 hidden">
-      <header class="text-center space-y-2">
+    <main id="game-screen" class="space-y-8 hidden w-full">
+      <header class="text-center space-y-1">
         <h1 class="text-3xl font-extrabold tracking-tight text-white">Score en Direct</h1>
-        <p class="text-sm text-slate-400">Le premier à atteindre <span class="text-red-400 font-bold">1000 pts</span> a perdu.</p>
+        <p class="text-sm text-slate-400">Objectif : Rester sous la barre des <span class="text-red-400 font-bold">1000 pts</span>.</p>
       </header>
 
       <section id="player-cards" class="grid grid-cols-2 sm:grid-cols-4 gap-4"></section>
 
       <section class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
-        <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400">⚡ Qui a fait Rami Sec ?</h2>
+        <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400">⚡ Qui a fait Rami Sec lors de cette manche ?</h2>
         <div id="action-buttons" class="grid grid-cols-2 sm:grid-cols-4 gap-3"></div>
       </section>
 
       <section class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
         <div class="px-6 py-4 border-b border-slate-800 flex justify-between items-center bg-slate-900/50">
-          <h3 class="font-bold text-slate-200 text-sm">Historique des Manches</h3>
-          <button type="button" onclick="undoLastRound()" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg transition">
-            ↩️ Annuler la dernière manche
+          <h3 class="font-bold text-slate-200 text-sm">Déroulé de la partie</h3>
+          <button type="button" onclick="App.engine.undoRound()" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg transition">
+            ↩️ Annuler la manche
           </button>
         </div>
-        <div class="overflow-x-auto">
+        <div class="overflow-x-auto custom-scroll">
           <table class="w-full text-left border-collapse">
             <thead>
-              <tr id="table-header" class="bg-slate-950/50 text-xs font-semibold uppercase tracking-wider text-slate-400 border-b border-slate-800">
-                </tr>
+              <tr id="table-header" class="bg-slate-950/50 text-xs font-semibold uppercase tracking-wider text-slate-400 border-b border-slate-800"></tr>
             </thead>
-            <tbody id="table-body" class="divide-y divide-slate-800/50 text-sm">
-              </tbody>
+            <tbody id="table-body" class="divide-y divide-slate-800/50 text-sm"></ul>
           </table>
         </div>
       </section>
 
       <div class="text-center">
-        <button type="button" onclick="resetToSetup()" class="text-xs text-red-400 hover:text-red-300 font-semibold bg-red-500/10 border border-red-500/20 px-4 py-2 rounded-xl transition">
-          🗑️ Abandonner et créer une nouvelle table
+        <button type="button" onclick="App.engine.abortGame()" class="text-xs text-red-400 hover:text-red-300 font-semibold bg-red-500/10 border border-red-500/20 px-4 py-2 rounded-xl transition">
+          🗑️ Abandonner la partie en cours
         </button>
+      </div>
+    </main>
+
+    <main id="history-screen" class="max-w-2xl w-full mx-auto bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-6 hidden">
+      <div class="flex justify-between items-center border-b border-slate-800 pb-4">
+        <div>
+          <h2 class="text-xl font-bold text-white">Historique de vos Sessions</h2>
+          <p class="text-xs text-slate-400">Archives des parties complétées.</p>
+        </div>
+        <button type="button" onclick="App.ui.switchScreen('setup-screen')" class="text-xs bg-slate-800 hover:bg-slate-750 text-slate-200 px-4 py-2 rounded-xl border border-slate-700/50 transition">
+          ⬅️ Retour
+        </button>
+      </div>
+
+      <div id="archives-list" class="space-y-4 max-h-[60vh] overflow-y-auto custom-scroll pr-1"></div>
+
+      <div class="pt-2 border-t border-slate-800 flex justify-between items-center">
+        <button type="button" onclick="App.storage.clearArchives()" class="text-xs text-red-400 hover:underline">
+          ⚠️ Effacer définitivement les archives
+        </button>
+        <span id="archives-count" class="text-xs text-slate-500 font-medium">0 partie enregistrée</span>
       </div>
     </main>
 
   </div>
 
   <script>
-    let players = [];
-    let rounds = [];
-
-    function handleFormSubmit(e) {
-      e.preventDefault();
-      const input = document.getElementById('player-input');
-      const name = input.value.trim();
-      if (name && !players.includes(name)) {
-        players.push(name);
-        input.value = '';
-        renderSetup();
-      }
-    }
-
-    function removePlayer(index) {
-      players.splice(index, 1);
-      renderSetup();
-    }
-
-    function renderSetup() {
-      const list = document.getElementById('setup-players-list');
-      const startBtn = document.getElementById('start-game-btn');
-      
-      if (players.length === 0) {
-        list.innerHTML = `<li class="p-4 text-center text-xs text-slate-500 italic">Aucun joueur ajouté</li>`;
-        startBtn.disabled = true;
-        startBtn.classList.add('opacity-30');
-      } else {
-        list.innerHTML = players.map((p, idx) => `
-          <li class="flex justify-between items-center p-3 text-sm font-medium pl-4">
-            <span>${p}</span>
-            <button type="button" onclick="removePlayer(${idx})" class="text-red-400 hover:text-red-300 text-xs px-2 py-1">Retirer</button>
-          </li>
-        `).join('');
-        
-        if (players.length >= 2) {
-          startBtn.disabled = false;
-          startBtn.classList.remove('opacity-30');
-        } else {
-          startBtn.disabled = true;
-          startBtn.classList.add('opacity-30');
+    /**
+     * Espace de nommage global (Namespace complet de l'application)
+     */
+    const App = {
+      // Configuration des constantes globales modifiables facilement
+      config: {
+        pointsPerLoss: 100,
+        eliminationThreshold: 1000,
+        storageKeys: {
+          live: 'rami_live_session',
+          global: 'rami_global_archives'
         }
-      }
-    }
+      },
 
-    function validateAndStart() {
-      if (players.length < 2) return;
-      rounds = [];
-      saveToStorage();
-      
-      document.getElementById('setup-screen').classList.add('hidden');
-      document.getElementById('game-screen').classList.remove('hidden');
-      
-      initGameScreen();
-    }
+      // Données dynamiques de session (State)
+      state: {
+        players: [],
+        rounds: []
+      },
 
-    function initGameScreen() {
-      const header = document.getElementById('table-header');
-      header.innerHTML = `<th class="py-4 px-4 text-center w-16">M.</th>` + 
-        players.map(p => `<th class="py-4 px-4 text-center">${p}</th>`).join('') +
-        `<th class="py-4 px-4 text-center">Gagnant</th>`;
-
-      const actionZone = document.getElementById('action-buttons');
-      actionZone.innerHTML = players.map(p => `
-        <button type="button" onclick="addRound('${p}')" class="flex flex-col items-center justify-center py-3 bg-slate-800 hover:bg-slate-750 border border-slate-700/60 rounded-xl transition active:scale-95">
-          <span class="text-[10px] text-slate-400">Sec pour</span>
-          <span class="font-bold text-sm text-white mt-0.5">${p}</span>
-        </button>
-      `).join('');
-
-      renderGame();
-    }
-
-    function addRound(winner) {
-      rounds.push({ id: rounds.length + 1, winner: winner });
-      saveToStorage();
-      renderGame();
-    }
-
-    function undoLastRound() {
-      if (rounds.length > 0) {
-        rounds.pop();
-        saveToStorage();
-        renderGame();
-      }
-    }
-
-    function calculateTotals() {
-      const totals = {};
-      players.forEach(p => totals[p] = 0);
-      
-      rounds.forEach(round => {
-        players.forEach(p => {
-          if (p !== round.winner) totals[p] += 100;
-        });
-      });
-      return totals;
-    }
-
-    function renderGame() {
-      const totals = calculateTotals();
-      const cardsZone = document.getElementById('player-cards');
-      
-      cardsZone.innerHTML = players.map(p => {
-        const score = totals[p];
-        let colorClass = "text-slate-100";
-        let bgClass = "bg-slate-900 border-slate-800";
-        if (score >= 800) {
-          colorClass = "text-red-400 font-bold";
-          bgClass = "bg-red-950/20 border-red-900/50";
-        } else if (score >= 500) {
-          colorClass = "text-orange-400";
-        }
-        return `
-          <div class="border rounded-xl p-4 text-center space-y-1 ${bgClass}">
-            <div class="text-xs text-slate-400 truncate font-semibold">${p}</div>
-            <div class="text-2xl font-black ${colorClass}">${score}</div>
-          </div>
-        `;
-      }).join('');
-
-      const body = document.getElementById('table-body');
-      if (rounds.length === 0) {
-        body.innerHTML = `<tr><td colspan="${players.length + 2}" class="text-center py-8 text-slate-500 italic text-xs">Aucune manche jouée. Cliquez sur un joueur ci-dessus !</td></tr>`;
-        return;
-      }
-
-      body.innerHTML = [...rounds].reverse().map(round => `
-        <tr class="hover:bg-slate-900/40 transition-colors">
-          <td class="py-3 px-4 text-center font-bold text-slate-500">M${round.id}</td>
-          ${players.map(p => `
-            <td class="py-3 px-4 text-center ${p === round.winner ? 'text-emerald-400 font-extrabold' : 'text-slate-400'}">
-              ${p === round.winner ? '0' : '+100'}
-            </td>
-          `).join('')}
-          <td class="py-3 px-4 text-center text-amber-400 font-medium text-xs">⭐ ${round.winner}</td>
-        </tr>
-      `).join('');
-    }
-
-    function resetToSetup() {
-      if(confirm("Nouvelle table de jeu ?")) {
-        players = [];
-        rounds = [];
-        try { localStorage.removeItem('rami_universal_state'); } catch(e){}
-        document.getElementById('game-screen').classList.add('hidden');
-        document.getElementById('setup-screen').classList.remove('hidden');
-        renderSetup();
-      }
-    }
-
-    function saveToStorage() {
-      try { localStorage.setItem('rami_universal_state', JSON.stringify({ players, rounds })); } catch(e){}
-    }
-
-    function loadFromStorage() {
-      try {
-        const saved = localStorage.getItem('rami_universal_state');
-        if (saved) {
-          const data = JSON.parse(saved);
-          if (data && data.players && data.players.length >= 2) {
-            players = data.players;
-            rounds = data.rounds || [];
-            document.getElementById('setup-screen').classList.add('hidden');
-            document.getElementById('game-screen').classList.remove('hidden');
-            initGameScreen();
-            return;
+      /**
+       * MODULE 1 : GESTION DU STOCKAGE (PERSISTANCE)
+       */
+      storage: {
+        saveLiveSession() {
+          localStorage.setItem(App.config.storageKeys.live, JSON.stringify({
+            players: App.state.players,
+            rounds: App.state.rounds
+          }));
+        },
+        clearLiveSession() {
+          localStorage.removeItem(App.config.storageKeys.live);
+        },
+        getLiveSession() {
+          const data = localStorage.getItem(App.config.storageKeys.live);
+          return data ? JSON.parse(data) : null;
+        },
+        getArchives() {
+          const data = localStorage.getItem(App.config.storageKeys.global);
+          return data ? JSON.parse(data) : [];
+        },
+        archiveGame(archivedGame) {
+          const archives = this.getArchives();
+          archives.unshift(archivedGame); // Ajoute au début de la liste
+          localStorage.setItem(App.config.storageKeys.global, JSON.stringify(archives));
+        },
+        clearArchives() {
+          if (confirm("Voulez-vous supprimer tout l'historique des parties passées ? Cette action est irréversible.")) {
+            localStorage.removeItem(App.config.storageKeys.global);
+            App.ui.renderArchives();
           }
         }
-      } catch(e) {}
-      renderSetup();
-    }
+      },
 
-    loadFromStorage();
+      /**
+       * MODULE 2 : LOGIQUE METIER & MOTEUR DE CALCUL (ENGINE)
+       */
+      engine: {
+        addPlayer(name) {
+          if (name && !App.state.players.includes(name)) {
+            App.state.players.push(name);
+            App.ui.renderSetupScreen();
+          }
+        },
+        removePlayer(index) {
+          App.state.players.splice(index, 1);
+          App.ui.renderSetupScreen();
+        },
+        startGame() {
+          if (App.state.players.length < 2) return;
+          App.state.rounds = [];
+          App.storage.saveLiveSession();
+          App.ui.initGameInterface();
+          App.ui.switchScreen('game-screen');
+        },
+        addRound(winnerName) {
+          const nextRoundId = App.state.rounds.length + 1;
+          App.state.rounds.push({ id: nextRoundId, winner: winnerName });
+          App.storage.saveLiveSession();
+          App.ui.renderGameInterface();
+          
+          // Vérification de la fin de partie (Est-ce que quelqu'un a perdu ?)
+          this.checkGameStatus();
+        },
+        undoRound() {
+          if (App.state.rounds.length > 0) {
+            App.state.rounds.pop();
+            App.storage.saveLiveSession();
+            App.ui.renderGameInterface();
+          }
+        },
+        calculateTotals() {
+          const totals = {};
+          App.state.players.forEach(p => totals[p] = 0);
+          
+          App.state.rounds.forEach(round => {
+            App.state.players.forEach(p => {
+              if (p !== round.winner) {
+                totals[p] += App.config.pointsPerLoss;
+              }
+            });
+          });
+          return totals;
+        },
+        checkGameStatus() {
+          const totals = this.calculateTotals();
+          const losers = App.state.players.filter(p => totals[p] >= App.config.eliminationThreshold);
+          
+          if (losers.length > 0) {
+            setTimeout(() => {
+              this.endGame(totals, losers);
+            }, 300);
+          }
+        },
+        endGame(finalTotals, losers) {
+          // Déterminer le vrai gagnant (celui qui a le moins de points)
+          let winnerName = App.state.players[0];
+          let minScore = finalTotals[winnerName];
+          
+          App.state.players.forEach(p => {
+            if (finalTotals[p] < minScore) {
+              minScore = finalTotals[p];
+              winnerName = p;
+            }
+          });
+
+          // Création de la structure d'archive scannable
+          const gameReport = {
+            id: Date.now(),
+            date: new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
+            players: [...App.state.players],
+            scores: finalTotals,
+            winner: winnerName,
+            loser: losers.join(', '),
+            totalRounds: App.state.rounds.length
+          };
+
+          // Sauvegarde dans les archives à long terme
+          App.storage.archiveGame(gameReport);
+          App.storage.clearLiveSession();
+
+          alert(`🏆 Partie Terminée !\nVainqueur : ${winnerName} (${minScore} pts)\nÉliminé(s) : ${losers.join(', ')}`);
+          
+          // Redirection vers l'historique global
+          App.state.players = [];
+          App.state.rounds = [];
+          App.ui.renderSetupScreen();
+          App.ui.renderArchives();
+          App.ui.switchScreen('history-screen');
+        },
+        abortGame() {
+          if (confirm("Êtes-vous sûr de vouloir détruire cette partie ? Elle ne sera pas enregistrée dans l'historique.")) {
+            App.state.players = [];
+            App.state.rounds = [];
+            App.storage.clearLiveSession();
+            App.ui.renderSetupScreen();
+            App.ui.switchScreen('setup-screen');
+          }
+        }
+      },
+
+      /**
+       * MODULE 3 : INTERFACE UTILISATEUR & RENDU HTML (UI)
+       */
+      ui: {
+        switchScreen(screenId) {
+          ['setup-screen', 'game-screen', 'history-screen'].forEach(id => {
+            document.getElementById(id).classList.add('hidden');
+          });
+          document.getElementById(screenId).classList.remove('hidden');
+        },
+        handlePlayerSubmit(e) {
+          e.preventDefault();
+          const input = document.getElementById('player-input');
+          const name = input.value.trim();
+          if (name) {
+            App.engine.addPlayer(name);
+            input.value = '';
+          }
+        },
+        renderSetupScreen() {
+          const list = document.getElementById('setup-players-list');
+          const startBtn = document.getElementById('start-game-btn');
+          
+          if (App.state.players.length === 0) {
+            list.innerHTML = `<li class="p-4 text-center text-xs text-slate-500 italic">Aucun joueur sur la table</li>`;
+            startBtn.disabled = true;
+            startBtn.classList.add('opacity-30');
+          } else {
+            list.innerHTML = App.state.players.map((p, idx) => `
+              <li class="flex justify-between items-center p-3 text-sm font-medium pl-4">
+                <span>${p}</span>
+                <button type="button" onclick="App.engine.removePlayer(${idx})" class="text-red-400 hover:text-red-300 text-xs px-2 py-1">Retirer</button>
+              </li>
+            `).join('');
+            
+            const isReady = App.state.players.length >= 2;
+            startBtn.disabled = !isReady;
+            if (isReady) startBtn.classList.remove('opacity-30');
+            else startBtn.classList.add('opacity-30');
+          }
+        },
+        initGameInterface() {
+          // En-tête dynamique du tableau
+          const header = document.getElementById('table-header');
+          header.innerHTML = `<th class="py-4 px-4 text-center w-16">M.</th>` + 
+            App.state.players.map(p => `<th class="py-4 px-4 text-center">${p}</th>`).join('') +
+            `<th class="py-4 px-4 text-center">Gagnant</th>`;
+
+          // Boutons tactiles rapides
+          const actionZone = document.getElementById('action-buttons');
+          actionZone.innerHTML = App.state.players.map(p => `
+            <button type="button" onclick="App.engine.addRound('${p}')" class="flex flex-col items-center justify-center py-3 bg-slate-800 hover:bg-slate-750 border border-slate-700/60 rounded-xl transition active:scale-95">
+              <span class="text-[10px] text-slate-400">Sec pour</span>
+              <span class="font-bold text-sm text-white mt-0.5">${p}</span>
+            </button>
+          `).join('');
+
+          this.renderGameInterface();
+        },
+        renderGameInterface() {
+          const totals = App.engine.calculateTotals();
+          
+          // Rendu des cartes de scores
+          const cardsZone = document.getElementById('player-cards');
+          cardsZone.innerHTML = App.state.players.map(p => {
+            const score = totals[p];
+            let colorClass = "text-slate-100";
+            let bgClass = "bg-slate-900 border-slate-800";
+            
+            if (score >= 800) {
+              colorClass = "text-red-400 font-bold";
+              bgClass = "bg-red-950/20 border-red-900/50 animate-pulse";
+            } else if (score >= 500) {
+              colorClass = "text-orange-400";
+            }
+            
+            return `
+              <div class="border rounded-xl p-4 text-center space-y-1 ${bgClass}">
+                <div class="text-xs text-slate-400 truncate font-semibold">${p}</div>
+                <div class="text-2xl font-black ${colorClass}">${score}</div>
+              </div>
+            `;
+          }).join('');
+
+          // Rendu des lignes du tableau de jeu
+          const body = document.getElementById('table-body');
+          if (App.state.rounds.length === 0) {
+            body.innerHTML = `<tr><td colspan="${App.state.players.length + 2}" class="text-center py-8 text-slate-500 italic text-xs">Aucune manche jouée. Cliquez sur un joueur pour commencer !</td></tr>`;
+            return;
+          }
+
+          body.innerHTML = [...App.state.rounds].reverse().map(round => `
+            <tr class="hover:bg-slate-900/40 transition-colors">
+              <td class="py-3 px-4 text-center font-bold text-slate-500">M${round.id}</td>
+              ${App.state.players.map(p => `
+                <td class="py-3 px-4 text-center ${p === round.winner ? 'text-emerald-400 font-extrabold' : 'text-slate-400'}">
+                  ${p === round.winner ? '0' : `+${App.config.pointsPerLoss}`}
+                </td>
+              `).join('')}
+              <td class="py-3 px-4 text-center text-amber-400 font-medium text-xs">⭐ ${round.winner}</td>
+            </tr>
+          `).join('');
+        },
+        renderArchives() {
+          const archives = App.storage.getArchives();
+          const listContainer = document.getElementById('archives-list');
+          document.getElementById('archives-count').innerText = `${archives.length} partie(s) enregistrée(s)`;
+
+          if (archives.length === 0) {
+            listContainer.innerHTML = `
+              <div class="text-center py-12 border border-dashed border-slate-800 rounded-xl text-slate-500 italic text-sm">
+                Aucune partie archivée pour le moment.
+              </div>`;
+            return;
+          }
+
+          listContainer.innerHTML = archives.map(game => `
+            <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 space-y-3">
+              <div class="flex justify-between items-center text-xs text-slate-400">
+                <span class="font-medium">📅 ${game.date}</span>
+                <span class="bg-slate-800 text-slate-300 px-2 py-0.5 rounded">${game.totalRounds} manches</span>
+              </div>
+              <div class="flex justify-between items-end">
+                <div>
+                  <div class="text-xs text-slate-500">Vainqueur</div>
+                  <div class="text-sm font-bold text-emerald-400">🏆 ${game.winner}</div>
+                </div>
+                <div class="text-right">
+                  <div class="text-xs text-slate-500">Éliminé(s)</div>
+                  <div class="text-sm font-semibold text-red-400">❌ ${game.loser}</div>
+                </div>
+              </div>
+              <div class="bg-slate-900/60 rounded-lg p-2 text-[11px] grid grid-cols-2 sm:grid-cols-4 gap-2 border border-slate-900">
+                ${Object.entries(game.scores).map(([player, score]) => `
+                  <div class="flex justify-between px-1">
+                    <span class="text-slate-400 truncate pr-1">${player} :</span>
+                    <span class="font-bold ${score >= App.config.eliminationThreshold ? 'text-red-400' : 'text-slate-200'}">${score}</span>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          `).join('');
+        }
+      },
+
+      /**
+       * Point d'entrée de l'application au démarrage
+       */
+      init() {
+        // Chargement du système de restauration automatique
+        const savedSession = App.storage.getLiveSession();
+        if (savedSession && savedSession.players && savedSession.players.length >= 2) {
+          App.state.players = savedSession.players;
+          App.state.rounds = savedSession.rounds || [];
+          App.ui.initGameInterface();
+          App.ui.switchScreen('game-screen');
+        } else {
+          App.ui.renderSetupScreen();
+        }
+        
+        // Pré-calcul de l'historique global
+        App.ui.renderArchives();
+      }
+    };
+
+    // Lancement officiel de la structure au chargement de la fenêtre
+    window.addEventListener('DOMContentLoaded', () => App.init());
   </script>
 </body>
 </html>
